@@ -25,14 +25,16 @@ const dxdy = {
 /**
  * パラメータ
  */
-const width_cell = 10;
-const height_cell = 10;
+let speed = 0;
+const width_cell = 25;
+const height_cell = 25;
 const cell_size = '16';
 const width = width_cell * 2 + 1;
 const height = height_cell * 2 + 1;
 let maze = [...Array(height)].map(() => Array(width).fill(1));
 
 // 開始座標
+// const [sx, sy] = [width_cell + 1, height_cell + 1];
 const [sx, sy] = [1, 1];
 
 const dig = (x, y) => {
@@ -50,7 +52,7 @@ const stop = () => {
 const start = () => {
     document.getElementById('btn_start').disabled = true;
     document.getElementById('btn_stop').disabled = false;
-    startTimer(loop, 0);
+    startTimer(loop, speed);
 }
 
 // DOMの作成
@@ -110,7 +112,8 @@ const createFrame = () => {
 let x, y;
 let direction = null;
 let cursor;
-let loop_cnt = 1;
+let loop_cnt;
+let dig_cnt;
 let stock;
 let currentStep = 0;
 const next = () => {
@@ -130,6 +133,8 @@ const init = () => {
 
     stock = [{x: sx, y: sy}];
     currentStep = 0;
+    loop_cnt = 1;
+    dig_cnt = 1;
 
     document.getElementById('maze').innerText = null;
     const table = document.createElement('table');
@@ -156,9 +161,9 @@ const init = () => {
 
 const loop = () => {
     if (currentStep == 0) {
-        if (stock.length == 0) {
+        if (stock.length == 0 || dig_cnt >= width_cell * height_cell) {
             stopTimer();
-            log(`${loop_cnt}:\tもう掘れるところが無い！完了！`);
+            log(`${loop_cnt}:\t完了！`);
             dig(1,0);
             dig(width - 2, height - 1);
             return;
@@ -181,7 +186,7 @@ const loop = () => {
         }
         if (direction !== null) {
             const {label} = dxdy[direction]
-            log(`${loop_cnt}:\t${label}を掘るよ`);
+            log(`${loop_cnt}:\t${label}が掘れる`);
         } else {
             log(`${loop_cnt}:\t掘れるところが無い`);
         }
@@ -194,8 +199,15 @@ const loop = () => {
             dig(x + dx * 2, y + dy * 2);
             stock.push({x, y});
             stock.push({x: x + dx * 2, y: y + dy * 2});
+            dig_cnt++;
         }　else {
-            log(`${loop_cnt}:\t戻るよ`);
+            log(`${loop_cnt}:\tワープ`);
+            const random = Math.floor(Math.random() * stock.length);
+            const tmp = stock[random];
+            if (tmp) {
+                stock = stock.filter((_,i) => i != random);
+                stock.push(tmp);
+            }
         }
         next();
     }
