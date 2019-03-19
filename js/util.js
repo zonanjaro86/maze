@@ -1,5 +1,15 @@
+let logElem;
 export const log = (str) => {
-    console.log(str);
+    if (!logElem) {
+        logElem = document.getElementById('log');
+    }
+    if (logElem) {
+        const li = document.createElement('li');
+        li.innerText = str;
+        logElem.insertBefore(li, logElem.firstChild);
+    } else {
+        console.log(str);
+    }
 }
 
 export const shuffle = (array) => {
