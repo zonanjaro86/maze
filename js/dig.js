@@ -25,9 +25,9 @@ const dxdy = {
 /**
  * パラメータ
  */
-let speed = 0;
-const width_cell = 25;
-const height_cell = 25;
+let speed = 200;
+const width_cell = 15;
+const height_cell = 15;
 const cell_size = '16';
 const width = width_cell * 2 + 1;
 const height = height_cell * 2 + 1;
@@ -53,6 +53,14 @@ const start = () => {
     document.getElementById('btn_start').disabled = true;
     document.getElementById('btn_stop').disabled = false;
     startTimer(loop, speed);
+}
+
+const changeSpeed = (e) => {
+    speed = e.target.options[e.target.selectedIndex].value;
+    if (document.getElementById('btn_start').disabled) {
+        stopTimer();
+        startTimer(loop, speed);
+    }
 }
 
 // DOMの作成
@@ -90,6 +98,42 @@ const createFrame = () => {
     reset_button.setAttribute('id', 'btn_reset');
     reset_button.addEventListener('click', init);
     buttons.appendChild(reset_button);
+
+    const next_button = document.createElement('button');
+    next_button.innerText = '>';
+    next_button.setAttribute('id', 'btn_next');
+    next_button.addEventListener('click', loop);
+    buttons.appendChild(next_button);
+
+    const speed_select = document.createElement('select');
+    speed_select.addEventListener('change', changeSpeed);
+    buttons.appendChild(speed_select);
+
+    const option1 = document.createElement('option');
+    option1.label = '激遅'
+    option1.value = 1000;
+    speed_select.appendChild(option1);
+
+    const option2 = document.createElement('option');
+    option2.label = '遅い'
+    option2.value = 400;
+    speed_select.appendChild(option2);
+
+    const option3 = document.createElement('option');
+    option3.label = '普通'
+    option3.value = 200;
+    option3.selected = true;
+    speed_select.appendChild(option3);
+
+    const option4 = document.createElement('option');
+    option4.label = '速い'
+    option4.value = 50;
+    speed_select.appendChild(option4);
+
+    const option5 = document.createElement('option');
+    option5.label = '激速'
+    option5.value = 0;
+    speed_select.appendChild(option5);
 
     const maze_wrap = document.createElement('div');
     maze_wrap.setAttribute('id', 'maze');
