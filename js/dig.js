@@ -16,14 +16,14 @@ const Cursor = class {
 }
 
 // 初期状態
-const width_cell = 5;
-const height_cell = 5;
+const width_cell = 10;
+const height_cell = 10;
 const width = width_cell * 2 + 1;
 const height = height_cell * 2 + 1;
 const cell_size = '16';
 const maze = [...Array(height)].map(() => Array(width).fill(1));
 
-const [sx, sy] = [width_cell, height_cell];
+const [sx, sy] = [1, 1];
 const stock = [];
 stock.push({x: sx, y: sy});
 
@@ -49,22 +49,30 @@ let cursor;
 const init = () => {
     const fragment = document.createDocumentFragment();
 
+    const wrapper = document.createElement('div');
+    wrapper.style.display = 'flex';
+    wrapper.style.flexWrap = 'wrap'
+    fragment.appendChild(wrapper);
+
+    const left = document.createElement('div');
+    wrapper.appendChild(left);
+
     const start_button = document.createElement('button');
     start_button.innerText = 'start';
     start_button.setAttribute('id', 'btn_start');
     start_button.addEventListener('click', start);
-    fragment.appendChild(start_button);
+    left.appendChild(start_button);
 
     const stop_button = document.createElement('button');
     stop_button.innerText = 'stop';
     stop_button.setAttribute('id', 'btn_stop');
     stop_button.addEventListener('click', stop);
     stop_button.disabled = true;
-    fragment.appendChild(stop_button);
+    left.appendChild(stop_button);
 
     const table = document.createElement('table');
-    table.style.width = `${cell_size * width}px`;
-    table.style.height = `${cell_size * height}px`;
+    table.style.width = `${cell_size * width + 2 * (width+1)}px`;
+    table.style.height = `${cell_size * height + 2 * (height+1)}px`;
     maze.forEach((line, y) => {
         const tr = document.createElement('tr');
         line.forEach((cell, x) => {
@@ -77,13 +85,20 @@ const init = () => {
         });
         table.appendChild(tr);
     })
-    fragment.appendChild(table);
+    left.appendChild(table);
+
+    document.body.appendChild(fragment);
+
+    const right = document.createElement('div');
+    right.style.overflow = 'auto scroll ';
+    right.style.height = `500px`;
+    right.style.width = `300px`;
+    wrapper.appendChild(right);
 
     const ul = document.createElement('ul');
     ul.setAttribute('id', 'log');
-    fragment.appendChild(ul);
+    right.appendChild(ul);
 
-    document.body.appendChild(fragment);
 
     cursor = new Cursor(sx, sy);
 };
@@ -104,9 +119,9 @@ const stop = () => {
 const start = () => {
     document.getElementById('btn_start').disabled = true;
     document.getElementById('btn_stop').disabled = false;
-    startTimer(loop, 500);
+    startTimer(loop, 0);
 }
-   
+
 let loop_cnt = 1;
 const loop = () => {
     if (currentStep == 0) {
@@ -120,7 +135,7 @@ const loop = () => {
         const {x:_x, y:_y} = stock.pop();
         [x, y] = [_x, _y];
         cursor.move(x, y);
-    
+
         const directions = shuffle([0, 1, 2, 3]);
         for (let i = 0; i < 4; i++) {
             direction = directions[i];
@@ -156,8 +171,10 @@ const loop = () => {
     loop_cnt++;
 }
 
-init();
-dig(sx, sy);
+window.addEventListener('load', () => {
+    init();
+    dig(sx, sy);
+});
 
 
 
