@@ -6,6 +6,7 @@ const width_cell = 20;
 const height_cell = 20;
 const width = width_cell * 2 + 1;
 const height = height_cell * 2 + 1;
+const cell_size = '16';
 const maze = [...Array(height)].map(() => Array(width).fill(1));
 
 const [sx, sy] = [21, 21];
@@ -14,6 +15,8 @@ stock.push({x: sx, y: sy});
 
 const initMaze = () => {
     const table = document.createElement('table');
+    table.style.width = `${cell_size * width}px`;
+    table.style.height = `${cell_size * height}px`;
     maze.forEach((line, y) => {
         const tr = document.createElement('tr');
         line.forEach((cell, x) => {
