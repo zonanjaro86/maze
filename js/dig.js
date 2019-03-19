@@ -15,15 +15,27 @@ const Cursor = class {
     }
 }
 
-// 初期状態
+const dxdy = {
+    0: {label: '北',dx: 0, dy: -1},
+    1: {label: '西',dx: -1, dy: 0},
+    2: {label: '東',dx: 1, dy: 0},
+    3: {label: '南',dx: 0, dy: 1},
+}
+
+/**
+ * パラメータ
+ */
 const width_cell = 10;
 const height_cell = 10;
+const cell_size = '16';
 const width = width_cell * 2 + 1;
 const height = height_cell * 2 + 1;
-const cell_size = '16';
 const maze = [...Array(height)].map(() => Array(width).fill(1));
 
+// 掘り始めの座標
 const [sx, sy] = [1, 1];
+
+// 穴掘りの起点となる座標をストックで保持
 const stock = [];
 stock.push({x: sx, y: sy});
 
@@ -35,17 +47,7 @@ const next = () => {
     }
 }
 
-let x, y;
-let direction = null;
-
-const dxdy = {
-    0: {label: '北',dx: 0, dy: -1},
-    1: {label: '西',dx: -1, dy: 0},
-    2: {label: '東',dx: 1, dy: 0},
-    3: {label: '南',dx: 0, dy: 1},
-}
-let cursor;
-
+// 初期処理
 const init = () => {
     const fragment = document.createDocumentFragment();
 
@@ -122,6 +124,10 @@ const start = () => {
     startTimer(loop, 0);
 }
 
+// ループ用変数
+let x, y;
+let direction = null;
+let cursor;
 let loop_cnt = 1;
 const loop = () => {
     if (currentStep == 0) {
