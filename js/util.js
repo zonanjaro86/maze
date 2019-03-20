@@ -13,6 +13,7 @@ export const log = (str) => {
 }
 
 export const shuffle = (array) => {
+    if (array.length < 2) return array;
     for(var i = array.length - 1; i > 0; i--){
         var r = Math.floor(Math.random() * (i + 1));
         var tmp = array[i];

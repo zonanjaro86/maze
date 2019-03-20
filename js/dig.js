@@ -1,6 +1,31 @@
 import {log, shuffle} from './util.js';
 import {startTimer, stopTimer} from './timer.js';
 
+
+/**
+ * 定数
+ */
+const cell_size = '16';
+const width_cell = 5;
+const height_cell = 5;
+const width = (width_cell + 1) * 2 + 1;
+const height = (height_cell + 1) * 2 + 1;
+const dxdy = {
+    0: {label: 'north',dx: 0, dy: -1},
+    1: {label: 'west',dx: -1, dy: 0},
+    2: {label: 'east',dx: 1, dy: 0},
+    3: {label: 'south',dx: 0, dy: 1},
+}
+
+
+/**
+ * 変数
+ */
+let speed = 200;
+let maze;
+let workers;
+let dig_cnt;
+
 const Cursor = class {
     constructor(x, y) {
         this.x = x;
@@ -15,32 +40,87 @@ const Cursor = class {
     }
 }
 
-const dxdy = {
-    0: {label: '北',dx: 0, dy: -1},
-    1: {label: '西',dx: -1, dy: 0},
-    2: {label: '東',dx: 1, dy: 0},
-    3: {label: '南',dx: 0, dy: 1},
+
+const Worker = class extends Cursor {
+    constructor(x, y, dir = 0) {
+        super(x, y);
+        this.dir = dir;
+        this.memo = {};
+        this.step = 0;
+        this.dig();
+        this.dig();
+    }
+    getdxdy(dir = this.dir, mag = 1) {
+        const {dx, dy} = dxdy[dir];
+        const [x, y] = [this.x + dx * mag, this.y + dy * mag];
+        return [x, y];
+    }
+    // 目の前を掘る
+    dig () {
+        const [x, y] = this.getdxdy(this.dir, 1);
+        const result = dig(x, y);
+        if (result) {
+            this.move(x, y);
+        }
+    }
+    // 周囲の掘れる方向を確認
+    search () {
+        const index = `${this.x}_${this.y}`;
+
+        const searchList = this.memo[index] ? this.memo[index] : [0, 1, 2, 3];
+        const dirList = [];
+        searchList.forEach((dir) => {
+            const [x, y] = this.getdxdy(dir, 2);
+            if (maze[y][x] == 1) {
+                dirList.push(dir);
+            }
+        });
+        this.memo[index] = dirList;
+        return this.memo[index].length > 0;
+    }
+    next () {
+        if (this.step == 0) {
+            // search
+            if (this.search()) {
+                this.dir = shuffle(this.memo[`${this.x}_${this.y}`]).pop();
+                log(`search: dir ${dxdy[this.dir].label}`);
+            } else {
+                this.step = 2;
+                log(`search: no dig`);
+                return;
+            }
+            
+            // dig
+            this.dig (...this.getdxdy(this.dir, 1));
+            this.dig (...this.getdxdy(this.dir, 2));
+            this.step = 0;
+        } else if (this.step == 2) {
+            // warp
+            const keys = shuffle(Object.keys(this.memo));
+            for (let i = 0; i < keys.length; i++) {
+                const key = keys[i];
+                if (this.memo[key].length > 0) {
+                    this.move(...key.split('_').map(Number));
+                    this.step = 0;
+                    log('warp');
+                    return;
+                }
+            }
+        }
+    }
 }
 
-/**
- * パラメータ
- */
-let speed = 200;
-const width_cell = 15;
-const height_cell = 15;
-const cell_size = '16';
-const width = width_cell * 2 + 1;
-const height = height_cell * 2 + 1;
-let maze = [...Array(height)].map(() => Array(width).fill(1));
-
-// 開始座標
-// const [sx, sy] = [width_cell + 1, height_cell + 1];
-const [sx, sy] = [1, 1];
 
 const dig = (x, y) => {
     maze[y][x] = 0;
     const tgt = document.getElementById(`${x}_${y}`);
-    tgt.classList.remove('wall');
+    if (tgt) {
+        tgt.classList.remove('wall');
+        dig_cnt++;
+        return true;
+    } else {
+        return false;
+    }
 }
 
 const stop = () => {
@@ -152,21 +232,6 @@ const createFrame = () => {
     document.body.appendChild(fragment);
 };
 
-// ループ用変数
-let x, y;
-let direction = null;
-let cursor;
-let loop_cnt;
-let dig_cnt;
-let stock;
-let currentStep = 0;
-const next = () => {
-    currentStep++;
-    if (currentStep > 1) {
-        currentStep = 0;
-    }
-}
-
 // 初期処理
 const init = () => {
     stopTimer();
@@ -174,11 +239,14 @@ const init = () => {
     document.getElementById('btn_stop').disabled = true;
 
     maze = [...Array(height)].map(() => Array(width).fill(1));
+    maze[0].fill(0);
+    maze[height-1].fill(0);
+    maze.forEach((_, i) => {
+        maze[i][0] = 0;
+        maze[i][width-1] = 0;
+    });
 
-    stock = [{x: sx, y: sy}];
-    currentStep = 0;
-    loop_cnt = 1;
-    dig_cnt = 1;
+    dig_cnt = 0;
 
     document.getElementById('maze').innerText = null;
     const table = document.createElement('table');
@@ -198,65 +266,22 @@ const init = () => {
     })
     document.getElementById('maze').appendChild(table);
 
-    cursor = new Cursor(sx, sy);
-
-    dig(sx, sy);
+    workers = [
+        new Worker(2, 0, 3),
+        // new Worker(width-3, height-3)
+    ];
 }
 
 const loop = () => {
-    if (currentStep == 0) {
-        if (stock.length == 0 || dig_cnt >= width_cell * height_cell) {
-            stopTimer();
-            log(`${loop_cnt}:\t完了！`);
-            dig(1,0);
-            dig(width - 2, height - 1);
-            return;
-        }
-        const {x:_x, y:_y} = stock.pop();
-        [x, y] = [_x, _y];
-        cursor.move(x, y);
-
-        const directions = shuffle([0, 1, 2, 3]);
-        for (let i = 0; i < 4; i++) {
-            direction = directions[i];
-            const {dx, dy} = dxdy[direction];
-            if (y + dy * 2 < height && x + dx * 2 < width
-                && y + dy * 2 >= 0 && x + dx * 2 >= 0
-                && maze[y + dy * 2][x + dx * 2] == 1) {
-                    break;
-            } else {
-                direction = null;
-            }
-        }
-        if (direction !== null) {
-            const {label} = dxdy[direction]
-            log(`${loop_cnt}:\t${label}が掘れる`);
-        } else {
-            log(`${loop_cnt}:\t掘れるところが無い`);
-        }
-        next();
-    } else if (currentStep == 1) {
-        if (direction !== null) {
-            const {dx, dy} = dxdy[direction];
-            log(`${loop_cnt}:\t掘った`);
-            dig(x + dx, y + dy);
-            dig(x + dx * 2, y + dy * 2);
-            stock.push({x, y});
-            stock.push({x: x + dx * 2, y: y + dy * 2});
-            dig_cnt++;
-        }　else {
-            log(`${loop_cnt}:\tワープ`);
-            const random = Math.floor(Math.random() * stock.length);
-            const tmp = stock[random];
-            if (tmp) {
-                stock = stock.filter((_,i) => i != random);
-                stock.push(tmp);
-            }
-        }
-        next();
+    if (dig_cnt >= (width_cell * height_cell) * 2 - 1) {
+        stopTimer();
     }
-    loop_cnt++;
+    workers.forEach((worker) => {
+        worker.next();
+    });
+    console.log(dig_cnt);
 }
+
 
 window.addEventListener('load', () => {
     createFrame();
