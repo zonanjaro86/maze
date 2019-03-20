@@ -279,7 +279,6 @@ const loop = () => {
     workers.forEach((worker) => {
         worker.next();
     });
-    console.log(dig_cnt);
 }
 
 
