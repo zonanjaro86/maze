@@ -6,8 +6,8 @@ import {startTimer, stopTimer} from './timer.js';
  * 定数
  */
 const cell_size = '16';
-const width_cell = 5;
-const height_cell = 5;
+const width_cell = 15;
+const height_cell = 15;
 const width = (width_cell + 1) * 2 + 1;
 const height = (height_cell + 1) * 2 + 1;
 const dxdy = {
@@ -40,7 +40,6 @@ const Cursor = class {
     }
 }
 
-
 const Worker = class extends Cursor {
     constructor(x, y, dir = 0) {
         super(x, y);
@@ -58,7 +57,7 @@ const Worker = class extends Cursor {
     // 目の前を掘る
     dig () {
         const [x, y] = this.getdxdy(this.dir, 1);
-        const result = dig(x, y);
+        const result = maze.dig(x, y);
         if (result) {
             this.move(x, y);
         }
@@ -71,7 +70,7 @@ const Worker = class extends Cursor {
         const dirList = [];
         searchList.forEach((dir) => {
             const [x, y] = this.getdxdy(dir, 2);
-            if (maze[y][x] == 1) {
+            if (maze.map[y][x] == 1) {
                 dirList.push(dir);
             }
         });
@@ -110,6 +109,63 @@ const Worker = class extends Cursor {
     }
 }
 
+const Maze = class {
+    constructor (width, height) {
+        this.width = width * 2 + 1;
+        this.height = height * 2 + 1;
+        this.map = this.createMap();
+        this.dig_cnt = 0;
+        this.workers = [];
+    }
+    createMap () {
+        const map = [...Array(this.height)].map(() => Array(this.width).fill(1));
+        map[0].fill(0);
+        map[this.height-1].fill(0);
+        map.forEach((_, i) => {
+            map[i][0] = 0;
+            map[i][this.width-1] = 0;
+        });
+        return map;
+    }
+    draw () {
+        document.getElementById('maze').innerText = null;
+        const table = document.createElement('table');
+        table.style.width = `${cell_size * this.width + 2 * (this.width+1)}px`;
+        table.style.height = `${cell_size * this.height + 2 * (this.height+1)}px`;
+        this.map.forEach((line, y) => {
+            const tr = document.createElement('tr');
+            line.forEach((cell, x) => {
+                const td = document.createElement('td');
+                td.setAttribute('id', `${x}_${y}`);
+                if (cell !== 0) {
+                    td.classList.add('wall');
+                }
+                tr.appendChild(td);
+            });
+            table.appendChild(tr);
+        })
+        document.getElementById('maze').appendChild(table);
+    }
+    dig (x, y) {
+        this.map[y][x] = 0;
+        const tgt = document.getElementById(`${x}_${y}`);
+        if (tgt) {
+            tgt.classList.remove('wall');
+            this.dig_cnt++;
+            return true;
+        } else {
+            return false;
+        }
+    }
+    addWorker (worker) {
+        this.workers.push(worker);
+    }
+    next () {
+        this.workers.forEach((worker) => {
+            worker.next();
+        });
+    }
+}
 
 const dig = (x, y) => {
     maze[y][x] = 0;
@@ -237,48 +293,17 @@ const init = () => {
     stopTimer();
     document.getElementById('btn_start').disabled = false;
     document.getElementById('btn_stop').disabled = true;
-
-    maze = [...Array(height)].map(() => Array(width).fill(1));
-    maze[0].fill(0);
-    maze[height-1].fill(0);
-    maze.forEach((_, i) => {
-        maze[i][0] = 0;
-        maze[i][width-1] = 0;
-    });
-
-    dig_cnt = 0;
-
-    document.getElementById('maze').innerText = null;
-    const table = document.createElement('table');
-    table.style.width = `${cell_size * width + 2 * (width+1)}px`;
-    table.style.height = `${cell_size * height + 2 * (height+1)}px`;
-    maze.forEach((line, y) => {
-        const tr = document.createElement('tr');
-        line.forEach((cell, x) => {
-            const td = document.createElement('td');
-            td.setAttribute('id', `${x}_${y}`);
-            if (cell !== 0) {
-                td.classList.add('wall');
-            }
-            tr.appendChild(td);
-        });
-        table.appendChild(tr);
-    })
-    document.getElementById('maze').appendChild(table);
-
-    workers = [
-        new Worker(2, 0, 3),
-        // new Worker(width-3, height-3)
-    ];
+    
+    maze = new Maze(5,5);
+    maze.draw();
+    maze.addWorker(new Worker(2, 0, 3));
 }
 
 const loop = () => {
     if (dig_cnt >= (width_cell * height_cell) * 2 - 1) {
         stopTimer();
     }
-    workers.forEach((worker) => {
-        worker.next();
-    });
+    maze.next();
 }
 
 
