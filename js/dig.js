@@ -10,7 +10,6 @@ let height = 10;
 let height_tmp = height;
 let speed = 200;
 let maze;
-let workers;
 
 export const load = (id) => {
     createFrame(id);
@@ -25,18 +24,14 @@ const init = () => {
     width = width_tmp;
     height = height_tmp;
     maze = new Maze(width, height);
-    workers = [
-        new Worker(2, 2, maze),
-    ];
+    maze.setWorker(new Worker(2, 2));
 }
 
 const loop = () => {
     if (maze.dig_cnt >= (width * height) * 2) {
         stop();
     }
-    workers.forEach((worker) => {
-        worker.next();
-    });
+    maze.next();
 }
 
 // ループ停止

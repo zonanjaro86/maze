@@ -6,6 +6,7 @@ export const Maze = class {
         this.width = width * 2 + 3;
         this.height = height * 2 + 3;
         this.map = this.createMap();
+        this.worker;
         this.draw();
         this.dig(2, 1); // start
         this.dig(this.width - 3, this.height - 2); // goal
@@ -54,8 +55,10 @@ export const Maze = class {
         this.workers.push(worker);
     }
     next () {
-        this.workers.forEach((worker) => {
-            worker.next();
-        });
+        this.worker.next();
+    }
+    setWorker (worker) {
+        this.worker = worker;
+        this.worker.setMaze(this);
     }
 }

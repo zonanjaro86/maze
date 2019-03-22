@@ -9,13 +9,12 @@ const dxdy = {
 }
 
 export const Worker = class extends Cursor {
-    constructor(x, y, maze) {
+    constructor(x, y) {
         super(x, y);
         this.dir = 0;
         this.memo = {};
         this.step = 0;
-        this.maze = maze;
-        maze.dig(x, y);
+        this.maze;
     }
     getdxdy(dir = this.dir, mag = 1) {
         const {dx, dy} = dxdy[dir];
@@ -74,5 +73,9 @@ export const Worker = class extends Cursor {
                 }
             }
         }
+    }
+    setMaze (maze) {
+        this.maze = maze;
+        maze.dig(this.x, this.y);
     }
 }
