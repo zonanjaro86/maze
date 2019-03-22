@@ -8,9 +8,15 @@
     <meta http-equiv="Cache-Control" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <title>maze_dig</title>
-    <script type="module" src="./js/dig.js"></script>
+    <script type="module">
+        import * as CreateDigMaze from './js/dig.js';
+        window.addEventListener('load', () => {
+            CreateDigMaze.load('create_dig_maze');
+        });
+    </script>
     <link rel="stylesheet" href="./css/dig.css">
 </head>
 <body>
+    <div id="create_dig_maze"></div>
 </body>
 </html>

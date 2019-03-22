@@ -4,7 +4,6 @@ td {
     margin: 0;
     padding: 0;
     font-size: 5px;
-    /* background: black; */
 }
 
 td.wall {
@@ -13,4 +12,14 @@ td.wall {
 
 td.cursor {
     background: rgb(255, 179, 179);
+}
+
+#wrapper {
+    display: flex;
+    flex-wrap: wrap;
+}
+#sub {
+    overflow: auto scroll;
+    height: 500px;
+    width: 300px;
 }

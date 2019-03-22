@@ -4,24 +4,56 @@ import {Maze} from './Maze.js';
 import {Worker} from './Worker.js';
 
 
-const width = 25;
-const height = 15;
+let width = 20;
+let width_tmp = width;
+let height = 10;
+let height_tmp = height;
 let speed = 200;
 let maze;
 let workers;
 
+export const load = (id) => {
+    createFrame(id);
+    init();
+}
+
+const init = () => {
+    if (width_tmp  > 100) width_tmp  = 100;
+    if (width_tmp  < 2)   width_tmp  = 2;
+    if (height_tmp > 100) height_tmp = 100;
+    if (height_tmp < 2)   height_tmp = 2;
+    width = width_tmp;
+    height = height_tmp;
+    maze = new Maze(width, height);
+    workers = [
+        new Worker(2, 2, maze),
+    ];
+}
+
+const loop = () => {
+    if (maze.dig_cnt >= (width * height) * 2) {
+        stop();
+    }
+    workers.forEach((worker) => {
+        worker.next();
+    });
+}
+
+// ループ停止
 const stop = () => {
     document.getElementById('btn_start').disabled = false;
     document.getElementById('btn_stop').disabled = true;
     stopTimer();
 }
 
+// ループ開始
 const start = () => {
     document.getElementById('btn_start').disabled = true;
     document.getElementById('btn_stop').disabled = false;
     startTimer(loop, speed);
 }
 
+// リセット
 const reset = () => {
     stopTimer();
     document.getElementById('btn_start').disabled = false;
@@ -29,6 +61,7 @@ const reset = () => {
     init();
 }
 
+// ループ速度変更
 const changeSpeed = (e) => {
     speed = e.target.options[e.target.selectedIndex].value;
     if (document.getElementById('btn_start').disabled) {
@@ -38,21 +71,48 @@ const changeSpeed = (e) => {
 }
 
 // DOMの作成
-const createFrame = () => {
+const createFrame = (id) => {
     const fragment = document.createDocumentFragment();
 
+    // 外枠
     const wrapper = document.createElement('div');
     wrapper.setAttribute('id', 'wrapper');
-    wrapper.style.display = 'flex';
-    wrapper.style.flexWrap = 'wrap'
     fragment.appendChild(wrapper);
 
-    const left = document.createElement('div');
-    left.setAttribute('id', 'left');
-    wrapper.appendChild(left);
+    // main
+    const main = document.createElement('div');
+    main.setAttribute('id', 'main');
+    wrapper.appendChild(main);
 
+    // 迷路のサイズ
+    main.appendChild(getSize());
+
+    // 制御ボタン
+    main.appendChild(getButtons());
+
+    // 速度調節
+    main.appendChild(getSpeedSelect());
+
+    // 迷路の枠
+    const maze_wrap = document.createElement('div');
+    maze_wrap.setAttribute('id', 'maze');
+    main.appendChild(maze_wrap);
+
+    // sub
+    const sub = document.createElement('div');
+    sub.setAttribute('id', 'sub');
+    wrapper.appendChild(sub);
+
+    // ログ出力
+    const ul = document.createElement('ul');
+    ul.setAttribute('id', 'log');
+    sub.appendChild(ul);
+
+    document.getElementById(id).appendChild(fragment);
+};
+
+const getButtons = () => {
     const buttons = document.createElement('div');
-    left.appendChild(buttons);
 
     const start_button = document.createElement('button');
     start_button.innerText = 'start';
@@ -79,9 +139,12 @@ const createFrame = () => {
     next_button.addEventListener('click', loop);
     buttons.appendChild(next_button);
 
+    return buttons;
+}
+
+const getSpeedSelect = () => {
     const speed_select = document.createElement('select');
     speed_select.addEventListener('change', changeSpeed);
-    buttons.appendChild(speed_select);
 
     const option1 = document.createElement('option');
     option1.label = '0.2倍速'
@@ -109,45 +172,31 @@ const createFrame = () => {
     option5.value = 0;
     speed_select.appendChild(option5);
 
-    const maze_wrap = document.createElement('div');
-    maze_wrap.setAttribute('id', 'maze');
-    left.appendChild(maze_wrap);
-
-    const right = document.createElement('div');
-    right.style.overflow = 'auto scroll ';
-    right.style.height = `500px`;
-    right.style.width = `300px`;
-    wrapper.appendChild(right);
-
-    const ul = document.createElement('ul');
-    ul.setAttribute('id', 'log');
-    right.appendChild(ul);
-
-    document.body.appendChild(fragment);
-};
-
-// 初期処理
-const init = () => {
-    maze = new Maze(width, height);
-    workers = [
-        new Worker(2, 2, maze),
-    ];
+    return speed_select;
 }
 
-const loop = () => {
-    if (maze.dig_cnt >= (width * height) * 2) {
-        stopTimer();
-    }
-    workers.forEach((worker) => {
-        worker.next();
+const getSize = () => {
+    const fragment = document.createDocumentFragment();
+
+    const input_width = document.createElement('input');
+    input_width.setAttribute('type', 'number');
+    input_width.setAttribute('min', '2');
+    input_width.setAttribute('max', '100');
+    input_width.value = width;
+    input_width.addEventListener('change', (e) => {
+        width_tmp = e.target.value;
     });
+    fragment.appendChild(input_width);
+
+    const input_height = document.createElement('input');
+    input_height.setAttribute('type', 'number');
+    input_height.setAttribute('min', '2');
+    input_height.setAttribute('max', '100');
+    input_height.value = height;
+    input_height.addEventListener('change', (e) => {
+        height_tmp = e.target.value;
+    });
+    fragment.appendChild(input_height);
+
+    return fragment;
 }
-
-
-window.addEventListener('load', () => {
-    createFrame();
-    init();
-});
-
-
-
