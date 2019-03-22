@@ -1,60 +1,62 @@
-import {log, shuffle} from './util.js';
+
 import {startTimer, stopTimer} from './timer.js';
+import {Maze} from './Maze.js';
+import {Worker} from './Worker.js';
 
-const Cursor = class {
-    constructor(x, y) {
-        this.x = x;
-        this.y = y;
-        document.getElementById(`${this.x}_${this.y}`).classList.add('cursor');
-    }
-    move(x, y) {
-        document.getElementById(`${this.x}_${this.y}`).classList.remove('cursor');
-        this.x = x;
-        this.y = y;
-        document.getElementById(`${this.x}_${this.y}`).classList.add('cursor');
-    }
-}
 
-const dxdy = {
-    0: {label: '北',dx: 0, dy: -1},
-    1: {label: '西',dx: -1, dy: 0},
-    2: {label: '東',dx: 1, dy: 0},
-    3: {label: '南',dx: 0, dy: 1},
-}
-
-/**
- * パラメータ
- */
+let width = 20;
+let width_tmp = width;
+let height = 10;
+let height_tmp = height;
 let speed = 200;
-const width_cell = 15;
-const height_cell = 15;
-const cell_size = '16';
-const width = width_cell * 2 + 1;
-const height = height_cell * 2 + 1;
-let maze = [...Array(height)].map(() => Array(width).fill(1));
+let maze;
 
-// 開始座標
-// const [sx, sy] = [width_cell + 1, height_cell + 1];
-const [sx, sy] = [1, 1];
-
-const dig = (x, y) => {
-    maze[y][x] = 0;
-    const tgt = document.getElementById(`${x}_${y}`);
-    tgt.classList.remove('wall');
+export const load = (id) => {
+    createFrame(id);
+    init();
 }
 
+const init = () => {
+    if (width_tmp  > 100) width_tmp  = 100;
+    if (width_tmp  < 2)   width_tmp  = 2;
+    if (height_tmp > 100) height_tmp = 100;
+    if (height_tmp < 2)   height_tmp = 2;
+    width = width_tmp;
+    height = height_tmp;
+    maze = new Maze(width, height);
+    maze.setWorker(new Worker(2, 2));
+}
+
+const loop = () => {
+    if (maze.dig_cnt >= (width * height) * 2) {
+        stop();
+    }
+    maze.next();
+}
+
+// ループ停止
 const stop = () => {
     document.getElementById('btn_start').disabled = false;
     document.getElementById('btn_stop').disabled = true;
     stopTimer();
 }
 
+// ループ開始
 const start = () => {
     document.getElementById('btn_start').disabled = true;
     document.getElementById('btn_stop').disabled = false;
     startTimer(loop, speed);
 }
 
+// リセット
+const reset = () => {
+    stopTimer();
+    document.getElementById('btn_start').disabled = false;
+    document.getElementById('btn_stop').disabled = true;
+    init();
+}
+
+// ループ速度変更
 const changeSpeed = (e) => {
     speed = e.target.options[e.target.selectedIndex].value;
     if (document.getElementById('btn_start').disabled) {
@@ -64,21 +66,48 @@ const changeSpeed = (e) => {
 }
 
 // DOMの作成
-const createFrame = () => {
+const createFrame = (id) => {
     const fragment = document.createDocumentFragment();
 
+    // 外枠
     const wrapper = document.createElement('div');
     wrapper.setAttribute('id', 'wrapper');
-    wrapper.style.display = 'flex';
-    wrapper.style.flexWrap = 'wrap'
     fragment.appendChild(wrapper);
 
-    const left = document.createElement('div');
-    left.setAttribute('id', 'left');
-    wrapper.appendChild(left);
+    // main
+    const main = document.createElement('div');
+    main.setAttribute('id', 'main');
+    wrapper.appendChild(main);
 
+    // 迷路のサイズ
+    main.appendChild(getSize());
+
+    // 制御ボタン
+    main.appendChild(getButtons());
+
+    // 速度調節
+    main.appendChild(getSpeedSelect());
+
+    // 迷路の枠
+    const maze_wrap = document.createElement('div');
+    maze_wrap.setAttribute('id', 'maze');
+    main.appendChild(maze_wrap);
+
+    // sub
+    const sub = document.createElement('div');
+    sub.setAttribute('id', 'sub');
+    wrapper.appendChild(sub);
+
+    // ログ出力
+    const ul = document.createElement('ul');
+    ul.setAttribute('id', 'log');
+    sub.appendChild(ul);
+
+    document.getElementById(id).appendChild(fragment);
+};
+
+const getButtons = () => {
     const buttons = document.createElement('div');
-    left.appendChild(buttons);
 
     const start_button = document.createElement('button');
     start_button.innerText = 'start';
@@ -96,7 +125,7 @@ const createFrame = () => {
     const reset_button = document.createElement('button');
     reset_button.innerText = 'reset';
     reset_button.setAttribute('id', 'btn_reset');
-    reset_button.addEventListener('click', init);
+    reset_button.addEventListener('click', reset);
     buttons.appendChild(reset_button);
 
     const next_button = document.createElement('button');
@@ -105,163 +134,64 @@ const createFrame = () => {
     next_button.addEventListener('click', loop);
     buttons.appendChild(next_button);
 
+    return buttons;
+}
+
+const getSpeedSelect = () => {
     const speed_select = document.createElement('select');
     speed_select.addEventListener('change', changeSpeed);
-    buttons.appendChild(speed_select);
 
     const option1 = document.createElement('option');
-    option1.label = '激遅'
+    option1.label = '0.2倍速'
     option1.value = 1000;
     speed_select.appendChild(option1);
 
     const option2 = document.createElement('option');
-    option2.label = '遅い'
+    option2.label = '0.5倍速'
     option2.value = 400;
     speed_select.appendChild(option2);
 
     const option3 = document.createElement('option');
-    option3.label = '普通'
+    option3.label = '1倍速'
     option3.value = 200;
     option3.selected = true;
     speed_select.appendChild(option3);
 
     const option4 = document.createElement('option');
-    option4.label = '速い'
+    option4.label = '4倍速'
     option4.value = 50;
     speed_select.appendChild(option4);
 
     const option5 = document.createElement('option');
-    option5.label = '激速'
+    option5.label = '20倍速'
     option5.value = 0;
     speed_select.appendChild(option5);
 
-    const maze_wrap = document.createElement('div');
-    maze_wrap.setAttribute('id', 'maze');
-    left.appendChild(maze_wrap);
-
-    const right = document.createElement('div');
-    right.style.overflow = 'auto scroll ';
-    right.style.height = `500px`;
-    right.style.width = `300px`;
-    wrapper.appendChild(right);
-
-    const ul = document.createElement('ul');
-    ul.setAttribute('id', 'log');
-    right.appendChild(ul);
-
-    document.body.appendChild(fragment);
-};
-
-// ループ用変数
-let x, y;
-let direction = null;
-let cursor;
-let loop_cnt;
-let dig_cnt;
-let stock;
-let currentStep = 0;
-const next = () => {
-    currentStep++;
-    if (currentStep > 1) {
-        currentStep = 0;
-    }
+    return speed_select;
 }
 
-// 初期処理
-const init = () => {
-    stopTimer();
-    document.getElementById('btn_start').disabled = false;
-    document.getElementById('btn_stop').disabled = true;
+const getSize = () => {
+    const fragment = document.createDocumentFragment();
 
-    maze = [...Array(height)].map(() => Array(width).fill(1));
+    const input_width = document.createElement('input');
+    input_width.setAttribute('type', 'number');
+    input_width.setAttribute('min', '2');
+    input_width.setAttribute('max', '100');
+    input_width.value = width;
+    input_width.addEventListener('change', (e) => {
+        width_tmp = e.target.value;
+    });
+    fragment.appendChild(input_width);
 
-    stock = [{x: sx, y: sy}];
-    currentStep = 0;
-    loop_cnt = 1;
-    dig_cnt = 1;
+    const input_height = document.createElement('input');
+    input_height.setAttribute('type', 'number');
+    input_height.setAttribute('min', '2');
+    input_height.setAttribute('max', '100');
+    input_height.value = height;
+    input_height.addEventListener('change', (e) => {
+        height_tmp = e.target.value;
+    });
+    fragment.appendChild(input_height);
 
-    document.getElementById('maze').innerText = null;
-    const table = document.createElement('table');
-    table.style.width = `${cell_size * width + 2 * (width+1)}px`;
-    table.style.height = `${cell_size * height + 2 * (height+1)}px`;
-    maze.forEach((line, y) => {
-        const tr = document.createElement('tr');
-        line.forEach((cell, x) => {
-            const td = document.createElement('td');
-            td.setAttribute('id', `${x}_${y}`);
-            if (cell !== 0) {
-                td.classList.add('wall');
-            }
-            tr.appendChild(td);
-        });
-        table.appendChild(tr);
-    })
-    document.getElementById('maze').appendChild(table);
-
-    cursor = new Cursor(sx, sy);
-
-    dig(sx, sy);
+    return fragment;
 }
-
-const loop = () => {
-    if (currentStep == 0) {
-        if (stock.length == 0 || dig_cnt >= width_cell * height_cell) {
-            stopTimer();
-            log(`${loop_cnt}:\t完了！`);
-            dig(1,0);
-            dig(width - 2, height - 1);
-            return;
-        }
-        const {x:_x, y:_y} = stock.pop();
-        [x, y] = [_x, _y];
-        cursor.move(x, y);
-
-        const directions = shuffle([0, 1, 2, 3]);
-        for (let i = 0; i < 4; i++) {
-            direction = directions[i];
-            const {dx, dy} = dxdy[direction];
-            if (y + dy * 2 < height && x + dx * 2 < width
-                && y + dy * 2 >= 0 && x + dx * 2 >= 0
-                && maze[y + dy * 2][x + dx * 2] == 1) {
-                    break;
-            } else {
-                direction = null;
-            }
-        }
-        if (direction !== null) {
-            const {label} = dxdy[direction]
-            log(`${loop_cnt}:\t${label}が掘れる`);
-        } else {
-            log(`${loop_cnt}:\t掘れるところが無い`);
-        }
-        next();
-    } else if (currentStep == 1) {
-        if (direction !== null) {
-            const {dx, dy} = dxdy[direction];
-            log(`${loop_cnt}:\t掘った`);
-            dig(x + dx, y + dy);
-            dig(x + dx * 2, y + dy * 2);
-            stock.push({x, y});
-            stock.push({x: x + dx * 2, y: y + dy * 2});
-            dig_cnt++;
-        }　else {
-            log(`${loop_cnt}:\tワープ`);
-            const random = Math.floor(Math.random() * stock.length);
-            const tmp = stock[random];
-            if (tmp) {
-                stock = stock.filter((_,i) => i != random);
-                stock.push(tmp);
-            }
-        }
-        next();
-    }
-    loop_cnt++;
-}
-
-window.addEventListener('load', () => {
-    createFrame();
-    init();
-});
-
-
-
