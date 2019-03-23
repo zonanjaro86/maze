@@ -1,0 +1,6 @@
+<svg preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10">
+    <path fill="gray" d="M0,0H10L5,5"/>
+    <path fill="gray" d="M0,0V10L5,5"/>
+    <path fill="gray" d="M10,10H0L5,5"/>
+    <path fill="gray" d="M10,10V0L5,5"/>
+</svg>

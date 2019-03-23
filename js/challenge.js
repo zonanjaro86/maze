@@ -1,6 +1,7 @@
-import {Maze} from './Maze2.js';
+import { Maze } from './Maze2.js';
 import { isKeyDown } from "./keyEvent.js";
 import { Explorer } from './Explorer.js';
+import { isTouch, getTouchController } from './touchEvent.js';
 
 const maze_data = [
     `5 3`,
@@ -31,6 +32,7 @@ export const load = (_id) => {
     const wrapper = document.createElement('div');
     wrapper.appendChild(createPanel());
     wrapper.appendChild(maze.createHtml());
+    wrapper.appendChild(getTouchController());
     document.getElementById(id).appendChild(wrapper);
     maze.init();
     explorer = new Explorer(maze);
@@ -50,16 +52,16 @@ const loop = () => {
         explorer.next();
         rest = cooltime;
     } else {
-        if (isKeyDown('ArrowUp')) {
+        if (isKeyDown('ArrowUp') || isTouch('up')) {
             maze.player.step(0);
             rest = cooltime;
-        } else if (isKeyDown('ArrowLeft')) {
+        } else if (isKeyDown('ArrowLeft') || isTouch('left')) {
             maze.player.step(1);
             rest = cooltime;
-        } else if (isKeyDown('ArrowRight')) {
+        } else if (isKeyDown('ArrowRight') || isTouch('right')) {
             maze.player.step(2);
             rest = cooltime;
-        } else if (isKeyDown('ArrowDown')) {
+        } else if (isKeyDown('ArrowDown') || isTouch('down')) {
             maze.player.step(3);
             rest = cooltime;
         }
@@ -106,4 +108,3 @@ const createPanel = () => {
     panel.appendChild(reset);
     return panel;
 };
-
