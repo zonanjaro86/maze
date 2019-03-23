@@ -2,8 +2,7 @@ const touchMap = {};
 
 export const getTouchController = () => {
     const controller = document.createElement('div');
-    controller.classList.add('sp');
-    controller.style.width = '100%';
+    controller.style.width = '150x%';
     controller.style.height = '100px';
     controller.style.background = 'url(./img/controller.svg) 100%';
     // controller.style.background-size = '100%';
